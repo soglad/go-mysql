@@ -155,6 +155,7 @@ func (b *BinlogSyncer) isClosed() bool {
 }
 
 func (b *BinlogSyncer) registerSlave() error {
+	log.Info("ENTER registerSlave++++++++++++++++++++++")
 	if b.c != nil {
 		b.c.Close()
 	}
@@ -164,25 +165,30 @@ func (b *BinlogSyncer) registerSlave() error {
 	b.c, err = client.Connect(fmt.Sprintf("%s:%d", b.cfg.Host, b.cfg.Port), b.cfg.User, b.cfg.Password, "", func(c *client.Conn) {
 		c.TLSConfig = b.cfg.TLSConfig
 	})
+	log.Info("CREATED CONNECT++++++++++++++++++++++")
 	if err != nil {
 		return errors.Trace(err)
 	}
 
+	log.Info("RGSLAVE1++++++++++++++++++++++")
 	if len(b.cfg.Charset) != 0 {
 		b.c.SetCharset(b.cfg.Charset)
 	}
 
+	log.Info("RGSLAVE2++++++++++++++++++++++")
 	//set read timeout
 	if b.cfg.ReadTimeout > 0 {
 		b.c.SetReadDeadline(time.Now().Add(b.cfg.ReadTimeout))
 	}
 
+	log.Info("RGSLAVE3++++++++++++++++++++++")
 	if b.cfg.RecvBufferSize > 0 {
 		if tcp, ok := b.c.Conn.Conn.(*net.TCPConn); ok {
 			tcp.SetReadBuffer(b.cfg.RecvBufferSize)
 		}
 	}
 
+	log.Info("RGSLAVE4++++++++++++++++++++++")
 	// kill last connection id
 	if b.lastConnectionID > 0 {
 		cmd := fmt.Sprintf("KILL %d", b.lastConnectionID)
@@ -196,9 +202,11 @@ func (b *BinlogSyncer) registerSlave() error {
 		log.Infof("kill last connection id %d", b.lastConnectionID)
 	}
 
+	log.Info("RGSLAVE5++++++++++++++++++++++")
 	// save last last connection id for kill
 	b.lastConnectionID = b.c.GetConnectionID()
 
+	log.Info("RGSLAVE6++++++++++++++++++++++")
 	//for mysql 5.6+, binlog has a crc32 checksum
 	//before mysql 5.6, this will not work, don't matter.:-)
 	if r, err := b.c.Execute("SHOW GLOBAL VARIABLES LIKE 'BINLOG_CHECKSUM'"); err != nil {
@@ -225,6 +233,7 @@ func (b *BinlogSyncer) registerSlave() error {
 		}
 	}
 
+	log.Info("RGSLAVE7++++++++++++++++++++++")
 	if b.cfg.Flavor == MariaDBFlavor {
 		// Refer https://github.com/alibaba/canal/wiki/BinlogChange(MariaDB5&10)
 		// Tell the server that we understand GTIDs by setting our slave capability
@@ -234,7 +243,9 @@ func (b *BinlogSyncer) registerSlave() error {
 		}
 	}
 
+	log.Info("RGSLAVE8++++++++++++++++++++++")
 	if b.cfg.HeartbeatPeriod > 0 {
+	        log.Info("SET HEARTBEAT++++++++++++++++++++++")
 		_, err = b.c.Execute(fmt.Sprintf("SET @master_heartbeat_period=%d;", b.cfg.HeartbeatPeriod))
 		if err != nil {
 			log.Error("failed to set @master_heartbeat_period=%d", b.cfg.HeartbeatPeriod, err)
@@ -242,54 +253,68 @@ func (b *BinlogSyncer) registerSlave() error {
 		}
 	}
 
+	log.Info("RGSLAVE9++++++++++++++++++++++")
 	if err = b.writeRegisterSlaveCommand(); err != nil {
 		return errors.Trace(err)
 	}
+	log.Info("RGSLAVE10++++++++++++++++++++++")
 
 	if _, err = b.c.ReadOKPacket(); err != nil {
 		return errors.Trace(err)
 	}
 
+	log.Info("OUT registerSlave++++++++++++++++++++++")
 	return nil
 }
 
-func (b *BinlogSyncer) enalbeSemiSync() error {
+func (b *BinlogSyncer) enableSemiSync() error {
+	log.Info("ENTER enableSemiSync++++++++++++++++++++++")
 	if !b.cfg.SemiSyncEnabled {
 		return nil
 	}
 
+	log.Info("enableSemiSync1++++++++++++++++++++++")
 	if r, err := b.c.Execute("SHOW VARIABLES LIKE 'rpl_semi_sync_master_enabled';"); err != nil {
+	log.Info("enableSemiSyn11++++++++++++++++++++++")
 		return errors.Trace(err)
 	} else {
+	log.Info("enableSemiSync12++++++++++++++++++++++")
 		s, _ := r.GetString(0, 1)
 		if s != "ON" {
 			log.Errorf("master does not support semi synchronous replication, use no semi-sync")
 			b.cfg.SemiSyncEnabled = false
 			return nil
 		}
+	log.Info("enableSemiSync121++++++++++++++++++++++")
 	}
 
+	log.Info("enableSemiSyn2++++++++++++++++++++++")
 	_, err := b.c.Execute(`SET @rpl_semi_sync_slave = 1;`)
 	if err != nil {
 		return errors.Trace(err)
 	}
 
+	log.Info("OUT enableSemiSync++++++++++++++++++++++")
 	return nil
 }
 
 func (b *BinlogSyncer) prepare() error {
+	log.Info("ENTER prepare++++++++++++++++++++++")
 	if b.isClosed() {
 		return errors.Trace(ErrSyncClosed)
 	}
 
+	log.Info("PREPARE1++++++++++++++++++++++")
 	if err := b.registerSlave(); err != nil {
 		return errors.Trace(err)
 	}
 
-	if err := b.enalbeSemiSync(); err != nil {
+	log.Info("PREPARE2++++++++++++++++++++++")
+	if err := b.enableSemiSync(); err != nil {
 		return errors.Trace(err)
 	}
 
+	log.Info("OUT prepare++++++++++++++++++++++")
 	return nil
 }
 
@@ -452,6 +477,7 @@ func (b *BinlogSyncer) localHostname() string {
 }
 
 func (b *BinlogSyncer) writeRegisterSlaveCommand() error {
+	log.Info("ENTER write rgister slave command++++++++++++++++++++++")
 	b.c.ResetSequence()
 
 	hostname := b.localHostname()
@@ -492,28 +518,35 @@ func (b *BinlogSyncer) writeRegisterSlaveCommand() error {
 	// master ID, 0 is OK
 	binary.LittleEndian.PutUint32(data[pos:], 0)
 
+	log.Info("OUT write rgister slave command++++++++++++++++++++++")
 	return b.c.WritePacket(data)
 }
 
 func (b *BinlogSyncer) replySemiSyncACK(p Position) error {
+	log.Info("ENTER replySemiSyncACK++++++++++++++++++++++")
 	b.c.ResetSequence()
 
+	log.Info("1 replySemiSyncACK++++++++++++++++++++++")
 	data := make([]byte, 4+1+8+len(p.Name))
 	pos := 4
 	// semi sync indicator
 	data[pos] = SemiSyncIndicator
 	pos++
 
+	log.Info("2 replySemiSyncACK++++++++++++++++++++++")
 	binary.LittleEndian.PutUint64(data[pos:], uint64(p.Pos))
 	pos += 8
 
+	log.Info("3 replySemiSyncACK++++++++++++++++++++++")
 	copy(data[pos:], p.Name)
 
+	log.Info("4 replySemiSyncACK++++++++++++++++++++++")
 	err := b.c.WritePacket(data)
 	if err != nil {
 		return errors.Trace(err)
 	}
 
+	log.Info("OUT replySemiSyncACK++++++++++++++++++++++")
 	return nil
 }
 
@@ -524,13 +557,13 @@ func (b *BinlogSyncer) retrySync() error {
 	b.parser.Reset()
 
 	if b.useGTID {
-		log.Infof("begin to re-sync from %s", b.gset.String())
+		log.Infof("GTID begin to re-sync from %s", b.gset.String())
 		if err := b.prepareSyncGTID(b.gset); err != nil {
 			return errors.Trace(err)
 		}
 
 	} else {
-		log.Infof("begin to re-sync from %s", b.nextPos)
+		log.Infof("POS begin to re-sync from %s", b.nextPos)
 		if err := b.prepareSyncPos(b.nextPos); err != nil {
 			return errors.Trace(err)
 		}
@@ -540,19 +573,23 @@ func (b *BinlogSyncer) retrySync() error {
 }
 
 func (b *BinlogSyncer) prepareSyncPos(pos Position) error {
+        log.Info("ENTER prepareSyncPos+++++++++++++++++++++++++")
 	// always start from position 4
 	if pos.Pos < 4 {
 		pos.Pos = 4
 	}
 
+        log.Info("1 prepareSyncPos+++++++++++++++++++++++++")
 	if err := b.prepare(); err != nil {
 		return errors.Trace(err)
 	}
 
+        log.Info("2 prepareSyncPos+++++++++++++++++++++++++")
 	if err := b.writeBinlogDumpCommand(pos); err != nil {
 		return errors.Trace(err)
 	}
 
+        log.Info("OUT prepareSyncPos+++++++++++++++++++++++++")
 	return nil
 }
 
@@ -585,13 +622,17 @@ func (b *BinlogSyncer) onStream(s *BinlogStreamer) {
 	}()
 
 	for {
+                log.Info("Start read packet++++++++++++++++")
 		data, err := b.c.ReadPacket()
+                log.Info("1  read packet++++++++++++++++")
 		if err != nil {
 			log.Error(err)
 
+                        log.Info("error read packet++++++++++++++++")
 			// we meet connection error, should re-connect again with
 			// last nextPos or nextGTID we got.
 			if len(b.nextPos.Name) == 0 && b.gset == nil {
+                                log.Info("close with error++++++++++++++++")
 				// we can't get the correct position, close.
 				s.closeWithError(err)
 				return
@@ -599,11 +640,13 @@ func (b *BinlogSyncer) onStream(s *BinlogStreamer) {
 
 			// TODO: add a max retry count.
 			for {
+                                log.Info("start try resync++++++++++++++++")
 				select {
 				case <-b.ctx.Done():
 					s.close()
 					return
 				case <-time.After(time.Second):
+                                        log.Info("try resync after 1 second ++++++++++++++++")
 					if err = b.retrySync(); err != nil {
 						log.Errorf("retry sync err: %v, wait 1s and retry again", err)
 						continue
@@ -617,18 +660,22 @@ func (b *BinlogSyncer) onStream(s *BinlogStreamer) {
 			continue
 		}
 
+                log.Info("2  read packet++++++++++++++++")
 		//set read timeout
 		if b.cfg.ReadTimeout > 0 {
 			b.c.SetReadDeadline(time.Now().Add(b.cfg.ReadTimeout))
 		}
 
+                log.Info("3  read packet++++++++++++++++")
 		switch data[0] {
 		case OK_HEADER:
+                        log.Info("OKHEADER  ++++++++++++++++")
 			if err = b.parseEvent(s, data); err != nil {
 				s.closeWithError(err)
 				return
 			}
 		case ERR_HEADER:
+                        log.Info("ERR_HEADER  ++++++++++++++++")
 			err = b.c.HandleErrorPacket(data)
 			s.closeWithError(err)
 			return
@@ -638,11 +685,14 @@ func (b *BinlogSyncer) onStream(s *BinlogStreamer) {
 			// Some users told me that they received EOF packet here, but I don't know why.
 			// So we only log a message and retry ReadPacket.
 			log.Info("receive EOF packet, retry ReadPacket")
-			continue
+                        err :=errors.New("receive EOF packet.")
+			s.closeWithError(err)
+		        return	
 		default:
 			log.Errorf("invalid stream header %c", data[0])
 			continue
 		}
+                log.Info("OUT read packet++++++++++++++++")
 	}
 }
 
