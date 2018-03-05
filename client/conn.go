@@ -65,6 +65,7 @@ func Connect(addr string, user string, password string, dbName string, options .
 		options[i](c)
 	}
 
+	c.SetReadDeadline(time.Now().Add(10*time.Second))
 	if err = c.handshake(); err != nil {
 		return nil, errors.Trace(err)
 	}
