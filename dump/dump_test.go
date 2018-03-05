@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	. "github.com/pingcap/check"
-	"github.com/siddontang/go-mysql/client"
+	"github.com/soglad/go-mysql/client"
 )
 
 // use docker mysql for test

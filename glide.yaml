@@ -1,4 +1,4 @@
-package: github.com/siddontang/go-mysql
+package: github.com/soglad/go-mysql
 import:
 - package: github.com/BurntSushi/toml
   version: ^0.3.0

@@ -12,11 +12,11 @@ import (
 	"time"
 
 	"github.com/juju/errors"
-	"github.com/siddontang/go-mysql/client"
-	"github.com/siddontang/go-mysql/dump"
-	"github.com/siddontang/go-mysql/mysql"
-	"github.com/siddontang/go-mysql/replication"
-	"github.com/siddontang/go-mysql/schema"
+	"github.com/soglad/go-mysql/client"
+	"github.com/soglad/go-mysql/dump"
+	"github.com/soglad/go-mysql/mysql"
+	"github.com/soglad/go-mysql/replication"
+	"github.com/soglad/go-mysql/schema"
 	log "github.com/sirupsen/logrus"
 )
 

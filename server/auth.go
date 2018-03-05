@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 
-	. "github.com/siddontang/go-mysql/mysql"
+	. "github.com/soglad/go-mysql/mysql"
 )
 
 func (c *Conn) writeInitialHandshake() error {

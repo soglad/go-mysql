@@ -11,7 +11,7 @@ import (
 
 	"github.com/juju/errors"
 	log "github.com/sirupsen/logrus"
-	. "github.com/siddontang/go-mysql/mysql"
+	. "github.com/soglad/go-mysql/mysql"
 	"github.com/siddontang/go/hack"
 )
 

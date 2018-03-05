@@ -12,8 +12,8 @@ import (
 
 	"github.com/juju/errors"
 	"github.com/satori/go.uuid"
-	"github.com/siddontang/go-mysql/client"
-	. "github.com/siddontang/go-mysql/mysql"
+	"github.com/soglad/go-mysql/client"
+	. "github.com/soglad/go-mysql/mysql"
 	log "github.com/sirupsen/logrus"
 )
 
