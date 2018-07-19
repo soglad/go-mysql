@@ -80,11 +80,14 @@ func (e *TableMapEvent) Decode(data []byte) error {
 
 	pos += n
 
-	if len(data[pos:]) != bitmapByteSize(int(e.ColumnCount)) {
-		return io.EOF
+	bitmapSize := bitmapByteSize(int(e.ColumnCount))
+	if len(data[pos:]) != bitmapSize {
+		log.Debug("Remain data size of this event is bigger than size for bitmap. This may happens in MySQL 8.0 " +
+			"for option meta data. Bitmap length is:",
+			bitmapByteSize(int(e.ColumnCount)), ", Remain data length is:", len(data[pos:]))
 	}
 
-	e.NullBitmap = data[pos:]
+	e.NullBitmap = data[pos:pos+bitmapByteSize(int(e.ColumnCount))]
 
 	return nil
 }
